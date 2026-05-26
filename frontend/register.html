@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Register - Attendance</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div class="page-shell auth-shell">
+    <section class="auth-card">
+      <div class="auth-intro">
+        <p class="eyebrow">Company Attendance</p>
+        <h1>Create your account</h1>
+        <p class="hero-copy">Set up your profile and join your department’s attendance system.</p>
+      </div>
+
+      <form id="regForm" class="auth-form">
+        <label>
+          <span>Name</span>
+          <input type="text" name="name" placeholder="Your full name" required>
+        </label>
+
+        <label>
+          <span>Email</span>
+          <input type="email" name="email" placeholder="name@company.com" required>
+        </label>
+
+        <label>
+          <span>Staff Code</span>
+          <input type="text" name="employee_code" placeholder="Enter your code" required>
+        </label>
+
+        <label>
+          <span>Password</span>
+          <input type="password" name="password" placeholder="Create a password" required>
+        </label>
+
+        <label>
+          <span>Department</span>
+          <select name="department_id">
+            <option value="">-- Select --</option>
+            <option value="1">Human Resource Management</option>
+            <option value="2">Finance</option>
+            <option value="3">Engineering(Government Solutions) </option>
+            <option value="4">Software Development</option>
+            <option value="5">IT System and Security</option>
+          </select>
+        </label>
+        <label>
+          <span>Role</span>
+          <select id="role_id" name="role_id" required>
+            <option value="">Loading roles…</option>
+          </select>
+        </label>
+
+        <button type="submit" class="btn btn-primary">Register</button>
+      </form>
+
+      <p class="auth-footer">Already have an account? <a href="index.html">Login</a></p>
+    </section>
+  </div>
+
+  <script>
+  function loadRoles() {
+    $.getJSON('../backend/get_roles.php')
+      .done(function(res) {
+        var html = '<option value="">-- Select role --</option>';
+        (res.roles || []).forEach(function(role) {
+          html += '<option value="' + role.id + '">' + role.role_name + '</option>';
+        });
+        $('#role_id').html(html);
+      })
+      .fail(function() {
+        $('#role_id').html('<option value="">Unable to load roles</option>');
+      });
+  }
+
+  $('#regForm').on('submit', function(e){
+    e.preventDefault();
+    $.ajax({
+      url: '../backend/register.php',
+      method: 'POST',
+      data: $(this).serialize(),
+      success: function(res){
+        if (res.success) { alert('Registered. Please login.'); location.href = 'index.html'; }
+        else alert(res.error || 'Registration failed');
+      },
+      error: function(){ alert('Request error'); }
+    });
+  });
+
+  $(function(){
+    loadRoles();
+  });
+  </script>
+</body>
+</html>

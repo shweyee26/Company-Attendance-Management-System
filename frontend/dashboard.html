@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard - Attendance</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Company Attendance</p>
+        <h1>Attendance Dashboard</h1>
+        <p class="hero-copy">Track attendance activity at a glance, review the latest totals, and jump back into detailed records.</p>
+      </div>
+      <div class="hero-actions">
+        <a href="attendance.html" class="btn btn-primary">View Attendance</a>
+        <a href="#" id="logout" class="btn btn-secondary">Logout</a>
+      </div>
+    </header>
+
+    <section class="stats-grid" id="summary" aria-live="polite">
+      <article class="stat-card loading-card">
+        <p>Total attendance records</p>
+        <h2>Loading…</h2>
+        <span>Updating in real time</span>
+      </article>
+      <article class="stat-card loading-card">
+        <p>Late entries</p>
+        <h2>Loading…</h2>
+        <span>Needs review</span>
+      </article>
+    </section>
+
+    <!-- <section class="content-grid">
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Quick overview</h2>
+          <span class="badge">Live</span>
+        </div>
+        <p class="panel-copy">Use the attendance view to inspect individual entries and confirm whether any records need follow-up attention.</p>
+        <ul class="feature-list">
+          <li>Bright, clear cards for key metrics</li>
+          <li>Responsive spacing for desktop and mobile</li>
+          <li>Consistent actions for navigation and logout</li>
+        </ul>
+      </article>
+
+      <article class="panel muted-panel">
+        <div class="panel-header">
+          <h2>Tips</h2>
+        </div>
+        <p class="panel-copy">If you notice a spike in late entries, review the attendance details page for the exact time and employee record.</p>
+      </article>
+    </section> -->
+  </div>
+
+  <script>
+  function renderSummary(res) {
+    var total = Number(res.total || 0);
+    var late = Number(res.late || 0);
+
+    $('#summary').html(
+      '<article class="stat-card">' +
+        '<p>Total attendance records</p>' +
+        '<h2>' + total.toLocaleString() + '</h2>' +
+        '<span>' + (total === 1 ? 'record logged' : 'records logged') + '</span>' +
+      '</article>' +
+      '<article class="stat-card">' +
+        '<p>Late entries</p>' +
+        '<h2>' + late.toLocaleString() + '</h2>' +
+        '<span>' + (late === 1 ? 'entry flagged' : 'entries flagged') + '</span>' +
+      '</article>'
+    );
+  }
+
+  function loadSummary(){
+    $.getJSON('../backend/get_dashboard.php')
+      .done(function(res){
+        if (res.error) {
+          $('#summary').html('<article class="stat-card error-card"><p>Unable to load summary</p><h2>' + res.error + '</h2><span>Please try again.</span></article>');
+          return;
+        }
+        renderSummary(res);
+      })
+      .fail(function(){
+        $('#summary').html('<article class="stat-card error-card"><p>Unable to load summary</p><h2>Failed to load</h2><span>Please refresh the page.</span></article>');
+      });
+  }
+
+  $(function(){
+    loadSummary();
+
+    $('#logout').on('click', function(e){
+      e.preventDefault();
+      $.post('../backend/logout.php', function(){
+        location.href='index.html';
+      });
+    });
+  });
+  </script>
+</body>
+</html>

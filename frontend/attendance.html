@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Attendance - Attendance</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero compact-hero">
+      <div>
+        <p class="eyebrow">Attendance</p>
+        <h1>Attendance Records</h1>
+        <p class="hero-copy">Filter by date range and scan employee activity in a clear, readable table.</p>
+      </div>
+      <div class="hero-actions">
+        <a href="dashboard.html" class="btn btn-secondary">Back to Dashboard</a>
+      </div>
+    </header>
+
+    <section class="panel filter-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Filter records</h2>
+          <p class="panel-copy">Choose a date range to narrow the attendance list.</p>
+        </div>
+      </div>
+
+      <form id="filters" class="filter-form">
+        <label>
+          <span>From</span>
+          <input type="date" name="from">
+        </label>
+        <label>
+          <span>To</span>
+          <input type="date" name="to">
+        </label>
+        <button type="submit" class="btn btn-primary">Apply Filter</button>
+      </form>
+    </section>
+
+    <section class="panel table-panel">
+      <div class="panel-header">
+        <h2>Records</h2>
+        
+      </div>
+      <div class="table-wrap">
+        <table id="tbl" class="attendance-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Date</th>
+              <th>Check In</th>
+              <th>Check Out</th>
+              <th>Department</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+  function renderRows(rows){
+    var html = '';
+
+    if (!rows.length) {
+      html = '<tr><td colspan="5" class="empty-state">No attendance records found for the selected range.</td></tr>';
+      $('#tbl tbody').html(html);
+      return;
+    }
+
+    rows.forEach(function(r){
+      html += '<tr>' +
+        '<td>' + (r.name || '') + '</td>' +
+        '<td>' + (r.attendance_date || '') + '</td>' +
+        '<td>' + (r.check_in || '') + '</td>' +
+        '<td>' + (r.check_out || '') + '</td>' +
+        '<td>' + (r.department_name || '') + '</td>' +
+      '</tr>';
+    });
+
+    $('#tbl tbody').html(html);
+  }
+
+  function load(filters){
+    $.getJSON('../backend/get_attendance.php', filters)
+      .done(function(res){
+        if (res.error) {
+          $('#tbl tbody').html('<tr><td colspan="5" class="empty-state">' + res.error + '</td></tr>');
+          return;
+        }
+
+        renderRows(res.data || []);
+      })
+      .fail(function(){
+        $('#tbl tbody').html('<tr><td colspan="5" class="empty-state">Failed to load attendance records.</td></tr>');
+      });
+  }
+
+  $('#filters').on('submit', function(e){
+    e.preventDefault();
+    load($(this).serialize());
+  });
+
+  $(function(){ load({}); });
+  </script>
+</body>
+</html>

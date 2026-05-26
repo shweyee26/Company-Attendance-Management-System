@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login - Attendance</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div class="page-shell auth-shell">
+    <section class="auth-card">
+      <div class="auth-intro">
+        <p class="eyebrow">Company Attendance</p>
+        <h1>Welcome</h1>
+        <p class="hero-copy">Sign in to review team attendance and monitor late entries.</p>
+      </div>
+
+      <form id="loginForm" class="auth-form">
+        <label>
+          <span>Email</span>
+          <input type="email" name="email" placeholder="name@company.com" required>
+        </label>
+
+        <label>
+          <span>Password</span>
+          <input type="password" name="password" placeholder="Enter your password" required>
+        </label>
+
+        <button type="submit" class="btn btn-primary">Login</button>
+      </form>
+
+      <p class="auth-footer">Don't have an account? <a href="register.html">Register</a></p>
+    </section>
+  </div>
+
+  <script>
+  $('#loginForm').on('submit', function(e){
+    e.preventDefault();
+    $.ajax({
+      url: '../backend/login.php',
+      method: 'POST',
+      data: $(this).serialize(),
+      success: function(res){
+        if (res.success) location.href = 'dashboard.html';
+        else alert(res.error || 'Login failed');
+      },
+      error: function(){ alert('Request error'); }
+    });
+  });
+  </script>
+</body>
+</html>
