@@ -13,10 +13,12 @@
       <div>
         <p class="eyebrow">Attendance</p>
         <h1>Attendance Records</h1>
-        <p class="hero-copy">Filter by date range and scan employee activity in a clear, readable table.</p>
+        <p class="hero-copy" id="attendance-filter-copy">Filter by date range.</p>
       </div>
       <div class="hero-actions">
         <a href="dashboard.html" class="btn btn-secondary">Back to Dashboard</a>
+        <button id="btn-checkin" class="btn btn-primary">Check In</button>
+        <button id="btn-checkout" class="btn btn-secondary">Check Out</button>
       </div>
     </header>
 
@@ -24,19 +26,21 @@
       <div class="panel-header">
         <div>
           <h2>Filter records</h2>
-          <p class="panel-copy">Choose a date range to narrow the attendance list.</p>
+          <p class="panel-copy" id="filter-help">Choose a date range to narrow the attendance list.</p>
         </div>
       </div>
 
       <form id="filters" class="filter-form">
         <label>
           <span>From</span>
-          <input type="date" name="from">
+          <input type="date" name="from" id="date-from">
         </label>
         <label>
           <span>To</span>
-          <input type="date" name="to">
+          <input type="date" name="to" id="date-to">
         </label>
+        <span id="department-filter-slot"></span>
+        <span id="employee-code-filter-slot"></span>
         <button type="submit" class="btn btn-primary">Apply Filter</button>
       </form>
     </section>
@@ -89,6 +93,8 @@
   function load(filters){
     $.getJSON('../backend/get_attendance.php', filters)
       .done(function(res){
+        applyRoleControls(res.role_id);
+
         if (res.error) {
           $('#tbl tbody').html('<tr><td colspan="5" class="empty-state">' + res.error + '</td></tr>');
           return;
@@ -101,12 +107,76 @@
       });
   }
 
+  function applyRoleControls(roleId) {
+    var isHr = Number(roleId) === 1;
+    var canSearchEmployeeCode = isHr || Number(roleId) === 2;
+
+    if (isHr && !$('#department-filter').length) {
+      $('#department-filter-slot').replaceWith(
+        '<label id="department-filter">' +
+          '<span>Department</span>' +
+          '<input type="text" name="department" placeholder="Department name">' +
+        '</label>'
+      );
+    } else if (!isHr && $('#department-filter').length) {
+      $('#department-filter').replaceWith('<span id="department-filter-slot"></span>');
+    }
+
+    if (canSearchEmployeeCode && !$('#employee-code-filter').length) {
+      $('#employee-code-filter-slot').replaceWith(
+        '<label id="employee-code-filter">' +
+          '<span>Employee Code</span>' +
+          '<input type="text" name="employee_code" placeholder="Employee code">' +
+        '</label>'
+      );
+    } else if (!canSearchEmployeeCode && $('#employee-code-filter').length) {
+      $('#employee-code-filter').replaceWith('<span id="employee-code-filter-slot"></span>');
+    }
+
+    $('#attendance-filter-copy').text(isHr ? 'Filter by date range, department, and employee code.' : (canSearchEmployeeCode ? 'Filter by date range and employee code.' : 'Filter by date range.'));
+    $('#filter-help').text(isHr ? 'Choose a date range, department name, or employee code to narrow the attendance list.' : (canSearchEmployeeCode ? 'Choose a date range or employee code to narrow the attendance list.' : 'Choose a date range to narrow the attendance list.'));
+  }
+
   $('#filters').on('submit', function(e){
     e.preventDefault();
     load($(this).serialize());
   });
 
   $(function(){ load({}); });
+
+  // Open calendar picker when clicking anywhere on the date input
+  $('input[type="date"]').on('click', function(){
+    try { this.showPicker(); } catch(e) {}
+  });
+
+  // Check-in/out handlers
+  $('#btn-checkin').on('click', function(){
+    if (!confirm('Confirm check in now?')) return;
+    $.post('../backend/check_in.php')
+      .done(function(res){
+        if (res.error) {
+          alert(res.error);
+          return;
+        }
+        alert('Checked in at ' + res.check_in);
+        load({});
+      })
+      .fail(function(){ alert('Failed to perform check in.'); });
+  });
+
+  $('#btn-checkout').on('click', function(){
+    if (!confirm('Confirm check out now?')) return;
+    $.post('../backend/check_out.php')
+      .done(function(res){
+        if (res.error) {
+          alert(res.error);
+          return;
+        }
+        alert('Checked out at ' + res.check_out);
+        load({});
+      })
+      .fail(function(){ alert('Failed to perform check out.'); });
+  });
   </script>
 </body>
 </html>

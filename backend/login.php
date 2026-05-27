@@ -37,23 +37,8 @@ try {
     $_SESSION['user_id'] = (int)$user['id'];
     $_SESSION['role_id'] = $user['role_id'] ? (int)$user['role_id'] : null;
     $_SESSION['department_id'] = $user['department_id'] ? (int)$user['department_id'] : null;
-
-    // record check-in for today if not exists
-    $today = (new DateTime())->format('Y-m-d');
-    $checkStmt = $pdo->prepare('SELECT id, check_in FROM attendance WHERE user_id = ? AND attendance_date = ?');
-    $checkStmt->execute([$_SESSION['user_id'], $today]);
-    $row = $checkStmt->fetch(PDO::FETCH_ASSOC);
-    $now = (new DateTime())->format('Y-m-d H:i:s');
-    if ($row) {
-        if (!$row['check_in']) {
-            $upd = $pdo->prepare('UPDATE attendance SET check_in = ? WHERE id = ?');
-            $upd->execute([$now, $row['id']]);
-        }
-    } else {
-        $employeeCode = trim((string)($user['employee_code'] ?? ''));
-        $ins = $pdo->prepare('INSERT INTO attendance (user_id, employee_code, attendance_date, check_in) VALUES (?,?,?,?)');
-        $ins->execute([$_SESSION['user_id'], $employeeCode, $today, $now]);
-    }
+    // store employee code for frontend actions (do not auto-record attendance on login)
+    $_SESSION['employee_code'] = trim((string)($user['employee_code'] ?? ''));
 
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
