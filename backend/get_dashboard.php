@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 
 $roleId = $_SESSION['role_id'];
 $departmentId = $_SESSION['department_id'];
-$userId = $_SESSION['user_id'];
+$employeeCode = $_SESSION['employee_code'] ?? '';
 
 $from = $_GET['from'] ?? null;
 $to = $_GET['to'] ?? null;
@@ -27,17 +27,17 @@ try {
     if ($roleId == 2) { // HOC
         $where .= ' AND u.department_id = ?'; $params[] = $departmentId;
     } elseif ($roleId == 3) { // Employee
-        $where .= ' AND a.user_id = ?'; $params[] = $userId;
+        $where .= ' AND a.employee_code = ?'; $params[] = $employeeCode;
     }
     if ($from) { $where .= ' AND a.attendance_date >= ?'; $params[] = $from; }
     if ($to) { $where .= ' AND a.attendance_date <= ?'; $params[] = $to; }
 
-    $totalStmt = $pdo->prepare('SELECT COUNT(*) FROM attendance a JOIN users u ON u.id = a.user_id ' . $where);
+    $totalStmt = $pdo->prepare('SELECT COUNT(*) FROM attendance a JOIN users u ON u.employee_code = a.employee_code ' . $where);
     $totalStmt->execute($params);
     $total = $totalStmt->fetchColumn();
 
     // late definition: check_in > 09:30
-    $lateStmt = $pdo->prepare('SELECT COUNT(*) FROM attendance a JOIN users u ON u.id = a.user_id ' . $where . " AND TIME(a.check_in) > '09:00:00'");
+    $lateStmt = $pdo->prepare('SELECT COUNT(*) FROM attendance a JOIN users u ON u.employee_code = a.employee_code ' . $where . " AND TIME(a.check_in) > '09:00:00'");
     $lateStmt->execute($params);
     $late = $lateStmt->fetchColumn();
 

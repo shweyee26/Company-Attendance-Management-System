@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(150) NOT NULL,
-  employee_code VARCHAR(100) NOT NULL,
+  employee_code VARCHAR(100) NOT NULL UNIQUE,
   email VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   department_id INT DEFAULT NULL,
@@ -27,14 +27,13 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS attendance (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-   employee_code VARCHAR(100) NOT NULL,
+  employee_code VARCHAR(100) NOT NULL,
   attendance_date DATE NOT NULL,
   check_in DATETIME DEFAULT NULL,
   check_out DATETIME DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY user_date_unique (user_id, attendance_date),
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  UNIQUE KEY employee_date_unique (employee_code, attendance_date),
+  FOREIGN KEY (employee_code) REFERENCES users(employee_code) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- Insert default roles

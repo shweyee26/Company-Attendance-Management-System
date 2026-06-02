@@ -6,6 +6,7 @@
   <title>Register - Attendance</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="js/jquery-3.6.0.min.js"></script>
+  <script src="js/ui.js"></script>
 </head>
 <body>
   <div class="page-shell auth-shell">
@@ -38,23 +39,14 @@
         </label>
 
         <label>
+          <span>Confirm Password</span>
+          <input type="password" name="confirm_password" placeholder="Confirm your password" required>
+        </label>
+
+        <label>
           <span>Department</span>
-          <select name="department_id">
-            <option value="">-- Select --</option>
-            <option value="1">Human Resource Management</option>
-            <option value="2">Finance</option>
-            <option value="3">Engineering(Government Solutions) </option>
-            <option value="4">Software Development</option>
-            <option value="5">IT System and Security</option>
-            <option value="6">Administration</option>
-            <option value="7">Marketing and Sales</option>
-            <option value="8">Engineering(Security and Unique Solutions)</option>
-            <option value="9">Cooperate</option>
-            <option value="10">Professional Services</option>
-            <option value="11">Logistics</option>
-            <option value="12">Payment Solutions</option>
-            <option value="13">Financial Solution</option>
-            <option value="14">Engineering(Government Solutions)</option>
+          <select id="department_id" name="department_id">
+            <option value="">Loading departments...</option>
           </select>
         </label>
         <label>
@@ -72,6 +64,37 @@
   </div>
 
   <script>
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function getRequestError(xhr, fallback) {
+    if (xhr.responseJSON && xhr.responseJSON.error) {
+      return xhr.responseJSON.error;
+    }
+
+    return fallback;
+  }
+
+  function loadDepartments() {
+    $.getJSON('../backend/get_departments.php')
+      .done(function(res) {
+        var html = '<option value="">-- Select department --</option>';
+        (res.departments || []).forEach(function(department) {
+          html += '<option value="' + department.id + '">' + escapeHtml(department.department_name) + '</option>';
+        });
+        $('#department_id').html(html);
+      })
+      .fail(function() {
+        $('#department_id').html('<option value="">Unable to load departments</option>');
+      });
+  }
+
   function loadRoles() {
     $.getJSON('../backend/get_roles.php')
       .done(function(res) {
@@ -88,19 +111,34 @@
 
   $('#regForm').on('submit', function(e){
     e.preventDefault();
+
+    var password = $('[name="password"]').val();
+    var confirmPassword = $('[name="confirm_password"]').val();
+
+    if (password !== confirmPassword) {
+      appAlert('Passwords do not match.', 'error');
+      $('[name="confirm_password"]').focus();
+      return;
+    }
+
     $.ajax({
       url: '../backend/register.php',
       method: 'POST',
       data: $(this).serialize(),
       success: function(res){
-        if (res.success) { alert('Registered. Please login.'); location.href = 'index.html'; }
-        else alert(res.error || 'Registration failed');
+        if (res.success) {
+          appAlert('Registered. Please login.', 'success').then(function() {
+            location.href = 'index.html';
+          });
+        }
+        else appAlert(res.error || 'Registration failed', 'error');
       },
-      error: function(){ alert('Request error'); }
+      error: function(xhr){ appAlert(getRequestError(xhr, 'Request error'), 'error'); }
     });
   });
 
   $(function(){
+    loadDepartments();
     loadRoles();
   });
   </script>

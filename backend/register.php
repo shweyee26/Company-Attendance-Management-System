@@ -13,13 +13,20 @@ $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 $name = trim($data['name'] ?? '');
 $email = trim($data['email'] ?? '');
 $password = $data['password'] ?? '';
+$confirm_password = $data['confirm_password'] ?? '';
 $employee_code = trim($data['employee_code'] ?? '');
 $department_id = intval($data['department_id'] ?? 0);
 $role_id = intval($data['role_id'] ?? 0);
 
-if (!$name || !$email || !$password || !$employee_code || !$role_id) {
+if (!$name || !$email || !$password || !$confirm_password || !$employee_code || !$role_id) {
     http_response_code(400);
     echo json_encode(['error' => 'Missing required fields']);
+    exit;
+}
+
+if ($password !== $confirm_password) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Passwords do not match']);
     exit;
 }
 
@@ -36,15 +43,42 @@ try {
         exit;
     }
 
+    // ensure unique employee code because attendance links to users by employee_code
+    $stmt = $pdo->prepare('SELECT id FROM users WHERE employee_code = ?');
+    $stmt->execute([$employee_code]);
+    if ($stmt->fetch()) {
+        http_response_code(409);
+        echo json_encode(['error' => 'Employee code already registered']);
+        exit;
+    }
+
+    if ($department_id) {
+        $departmentStmt = $pdo->prepare('SELECT id FROM departments WHERE id = ?');
+        $departmentStmt->execute([$department_id]);
+        if (!$departmentStmt->fetchColumn()) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid department selected']);
+            exit;
+        }
+    }
+
     // validate selected role exists in the database
-    $roleStmt = $pdo->prepare('SELECT id FROM user_roles WHERE id = ?');
+    $roleTable = 'user_roles';
+    $tableCheck = $pdo->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?');
+    $tableCheck->execute([$config['db_name'], $roleTable]);
+    if (!$tableCheck->fetchColumn()) {
+        $roleTable = 'user_role';
+        $tableCheck->execute([$config['db_name'], $roleTable]);
+        if (!$tableCheck->fetchColumn()) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Role table not found']);
+            exit;
+        }
+    }
+
+    $roleStmt = $pdo->prepare("SELECT id FROM {$roleTable} WHERE id = ?");
     $roleStmt->execute([$role_id]);
     $role = $roleStmt->fetchColumn();
-    if (!$role) {
-        $roleStmt = $pdo->prepare('SELECT id FROM user_role WHERE id = ?');
-        $roleStmt->execute([$role_id]);
-        $role = $roleStmt->fetchColumn();
-    }
 
     if (!$role) {
         http_response_code(400);

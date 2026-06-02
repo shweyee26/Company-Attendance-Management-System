@@ -12,10 +12,11 @@ if (!isset($_SESSION['user_id'])) {
 
 $roleId = $_SESSION['role_id'];
 $departmentId = $_SESSION['department_id'];
-$userId = $_SESSION['user_id'];
+$sessionEmployeeCode = $_SESSION['employee_code'] ?? '';
 
 $from = $_GET['from'] ?? null;
 $to = $_GET['to'] ?? null;
+$departmentFilterId = intval($_GET['department_id'] ?? 0);
 $departmentName = trim($_GET['department'] ?? '');
 $employeeCode = trim($_GET['employee_code'] ?? '');
 
@@ -25,16 +26,16 @@ try {
 
     $params = [];
     $sql = "SELECT a.id,
-                   a.user_id,
+                   u.id AS user_id,
                    a.attendance_date,
                    DATE_FORMAT(a.check_in, '%H:%i:%s') AS check_in,
                    DATE_FORMAT(a.check_out, '%H:%i:%s') AS check_out,
                    u.name,
-                   u.employee_code,
+                   a.employee_code,
                    u.email,
                    d.department_name
             FROM attendance a
-            JOIN users u ON u.id = a.user_id
+            JOIN users u ON u.employee_code = a.employee_code
             LEFT JOIN departments d ON d.id = u.department_id
             WHERE 1=1 ";
 
@@ -44,8 +45,8 @@ try {
         $sql .= ' AND u.department_id = ?';
         $params[] = $departmentId;
     } elseif ($roleId == 3) { // Employee
-        $sql .= ' AND a.user_id = ?';
-        $params[] = $userId;
+        $sql .= ' AND a.employee_code = ?';
+        $params[] = $sessionEmployeeCode;
     }
 
     if ($from) {
@@ -56,12 +57,15 @@ try {
         $sql .= ' AND a.attendance_date <= ?';
         $params[] = $to;
     }
-    if ($roleId == 1 && $departmentName !== '') {
+    if ($roleId == 1 && $departmentFilterId > 0) {
+        $sql .= ' AND u.department_id = ?';
+        $params[] = $departmentFilterId;
+    } elseif ($roleId == 1 && $departmentName !== '') {
         $sql .= ' AND d.department_name LIKE ?';
         $params[] = '%' . $departmentName . '%';
     }
     if (($roleId == 1 || $roleId == 2) && $employeeCode !== '') {
-        $sql .= ' AND u.employee_code LIKE ?';
+        $sql .= ' AND a.employee_code LIKE ?';
         $params[] = '%' . $employeeCode . '%';
     }
 

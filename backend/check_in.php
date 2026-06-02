@@ -16,12 +16,18 @@ $today = date('Y-m-d');
 $now = date('Y-m-d H:i:s');
 $currentTime = date('H:i:s');
 
+if ($employeeCode === '') {
+    http_response_code(400);
+    echo json_encode(['error' => 'Employee code is missing from your session. Please log in again.']);
+    exit;
+}
+
 try {
     $pdo = new PDO("mysql:host={$config['db_host']};dbname={$config['db_name']};charset=utf8mb4",
         $config['db_user'], $config['db_pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
-    $stmt = $pdo->prepare('SELECT * FROM attendance WHERE user_id = ? AND attendance_date = ?');
-    $stmt->execute([$userId, $today]);
+    $stmt = $pdo->prepare('SELECT * FROM attendance WHERE employee_code = ? AND attendance_date = ?');
+    $stmt->execute([$employeeCode, $today]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($row) {
@@ -33,8 +39,16 @@ try {
         $stmt = $pdo->prepare('UPDATE attendance SET check_in = ? WHERE id = ?');
         $stmt->execute([$now, $row['id']]);
     } else {
-        $stmt = $pdo->prepare('INSERT INTO attendance (user_id, employee_code, attendance_date, check_in) VALUES (?, ?, ?, ?)');
-        $stmt->execute([$userId, $employeeCode, $today, $now]);
+        $columnsStmt = $pdo->query('SHOW COLUMNS FROM attendance');
+        $columns = $columnsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+        if (in_array('user_id', $columns, true)) {
+            $stmt = $pdo->prepare('INSERT INTO attendance (user_id, employee_code, attendance_date, check_in) VALUES (?, ?, ?, ?)');
+            $stmt->execute([$userId, $employeeCode, $today, $now]);
+        } else {
+            $stmt = $pdo->prepare('INSERT INTO attendance (employee_code, attendance_date, check_in) VALUES (?, ?, ?)');
+            $stmt->execute([$employeeCode, $today, $now]);
+        }
     }
 
     echo json_encode(['success' => true, 'check_in' => $currentTime]);

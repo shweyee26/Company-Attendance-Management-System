@@ -8,6 +8,7 @@
   --accent: #38bdf8;
   --accent-2: #8b5cf6;
   --success: #34d399;
+  --warning: #f59e0b;
   --danger: #f87171;
   --border: rgba(148, 163, 184, 0.18);
   --shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
@@ -43,7 +44,7 @@ body::before {
 .page-shell {
   position: relative;
   z-index: 1;
-  max-width: 1100px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 32px 20px 56px;
 }
@@ -84,6 +85,32 @@ body::before {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.hero-actions .btn {
+  white-space: nowrap;
+}
+
+.attendance-page-actions {
+  display: contents;
+}
+
+.page-back-btn {
+  position: absolute;
+  top: 120px;
+  right: calc(99% + 12px);
+  width: 165px;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.page-logout-btn {
+  position: absolute;
+  top: 120px;
+  left: calc(99% + 12px);
+  width: 155px;
+  z-index: 2;
+  white-space: nowrap;
 }
 
 .btn {
@@ -236,7 +263,8 @@ body::before {
   font-weight: 700;
 }
 
-.filter-form input {
+.filter-form input,
+.filter-form select {
   min-width: 200px;
   padding: 12px 14px;
   border: 1px solid var(--border);
@@ -277,6 +305,11 @@ body::before {
 
 .attendance-table td {
   color: var(--muted);
+}
+
+.attendance-table td.late-check-in {
+  color: var(--danger);
+  font-weight: 800;
 }
 
 .attendance-table tr:last-child td {
@@ -369,7 +402,160 @@ input, select {
   margin: 4px 0;
 }
 
+.app-alert-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.app-alert-root.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.app-alert-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.46);
+  backdrop-filter: blur(8px);
+}
+
+.app-alert-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 430px);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  transform: translateY(10px) scale(0.98);
+  transition: transform 180ms ease;
+}
+
+.app-alert-root.is-open .app-alert-card {
+  transform: translateY(0) scale(1);
+}
+
+.app-alert-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.app-alert-icon::before {
+  content: "i";
+}
+
+.alert-success .app-alert-icon {
+  background: var(--success);
+}
+
+.alert-success .app-alert-icon::before {
+  content: "OK";
+  font-size: 0.72rem;
+}
+
+.alert-error .app-alert-icon {
+  background: var(--danger);
+}
+
+.alert-error .app-alert-icon::before {
+  content: "!";
+}
+
+.alert-warning .app-alert-icon {
+  background: var(--warning);
+}
+
+.alert-warning .app-alert-icon::before {
+  content: "?";
+}
+
+.alert-info .app-alert-icon {
+  background: var(--accent-2);
+}
+
+.app-alert-content h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 1.15rem;
+}
+
+.app-alert-content p {
+  margin: 8px 0 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.app-alert-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.app-alert-actions .btn {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+@media (max-width: 1359px) {
+  .page-back-btn,
+  .page-logout-btn {
+    width: 128px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+  }
+}
+
+@media (max-width: 1279px) {
+  .attendance-page-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .page-back-btn,
+  .page-logout-btn {
+    position: static;
+    flex: 1;
+    width: auto;
+  }
+}
+
 @media (max-width: 800px) {
+  .page-back-btn,
+  .page-logout-btn {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .hero-actions {
+    width: 100%;
+  }
+
+  .hero-actions .btn {
+    flex: 1;
+    min-width: 150px;
+  }
+
   .hero {
     align-items: start;
     flex-direction: column;
@@ -384,7 +570,8 @@ input, select {
     align-items: stretch;
   }
 
-  .filter-form input {
+  .filter-form input,
+  .filter-form select {
     min-width: 0;
     width: 100%;
   }
@@ -392,5 +579,30 @@ input, select {
   .auth-card {
     padding: 24px;
   }
+
+  .app-alert-card {
+    grid-template-columns: 1fr;
+  }
+
+  .app-alert-actions {
+    flex-direction: column-reverse;
+  }
+
+  .app-alert-actions .btn {
+    width: 100%;
+  }
 }
 
+@media (max-width: 480px) {
+  .attendance-page-actions,
+  .hero-actions {
+    flex-direction: column;
+  }
+
+  .attendance-page-actions .btn,
+  .hero-actions .btn {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+}

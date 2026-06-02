@@ -6,6 +6,7 @@
   <title>Login - Attendance</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="js/jquery-3.6.0.min.js"></script>
+  <script src="js/ui.js"></script>
 </head>
 <body>
   <div class="page-shell auth-shell">
@@ -43,9 +44,9 @@
       data: $(this).serialize(),
       success: function(res){
         if (res.success) location.href = 'dashboard.html';
-        else alert(res.error || 'Login failed');
+        else appAlert(res.error || 'Login failed', 'error');
       },
-      error: function(){ alert('Request error'); }
+      error: function(){ appAlert('Request error', 'error'); }
     });
   });
   </script>
