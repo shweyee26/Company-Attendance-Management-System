@@ -2,12 +2,10 @@ name: Laravel CI/CD Pipeline
 
 on:
   push:
-    branches: main  # main branch ထဲကို code push တိုင်း ဒီ automation အလုပ်လုပ်ပါမယ်
+    branches: main  
 
 jobs:
-  # ==========================================
-  # အပိုင်း (၁) - Code များကို စစ်ဆေးခြင်းနှင့် Build လုပ်ခြင်း (CI Stage)
-  # ==========================================
+  
   continuous-integration:
     runs-on: ubuntu-latest
     defaults:
@@ -18,7 +16,7 @@ jobs:
     - name: Checkout Source Code
       uses: actions/checkout@v4
 
-    # ---- Node.js (React / Vue / Express ဖြစ်ခဲ့လျှင်) ----
+  
     - name: Setup Node.js Environment
       uses: actions/setup-node@v4
       with:
@@ -30,8 +28,7 @@ jobs:
         npm ci
         npm run build --if-present
 
-    # ---- PHP / Laravel ဖြစ်ခဲ့လျှင် (လိုအပ်က ဖွင့်သုံးရန်) ----
-    - name: Setup PHP Environment
+    
       uses: shivammathur/setup-php@v2
       with:
         php-version: '8.2'
@@ -48,29 +45,27 @@ jobs:
         npm test --if-present
         # vendor/bin/phpunit --if-present  # Laravel unit test ရှိက run ရန်
 
-  # ==========================================
-  # အပိုင်း (၂) - Server ပေါ်သို့ တိုက်ရိုက်တင်ခြင်း (CD Stage)
-  # ==========================================
+  
   continuous-deployment:
-    needs: continuous-integration # Integration အောင်မြင်မှသာ Deployment ကို ဆက်လုပ်ပါမယ်
+    needs: continuous-integration 
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # main branch ပေါ် push တင်တဲ့အချိန်မှသာ deployment လုပ်ရန်
+    if: github.ref == 'refs/heads/main' 
 
     steps:
     - name: Checkout Source Code
       uses: actions/checkout@v4
 
-    # SSH သုံးပြီး သင့်ရဲ့ Live Server (VPS) ပေါ်သို့ စာဖိုင်များ လှမ်းပို့ခြင်း
+    
     - name: Deploy to Production Server via SSH
       uses: appleboy/scp-action@master
       with:
-        host: ${{ secrets.SERVER_HOST }}         # Server IP Address
-        username: ${{ secrets.SERVER_USERNAME }} # Server Username (e.g., ubuntu, root)
-        key: ${{ secrets.SERVER_SSH_KEY }}       # SSH Private Key
+        host: ${{ secrets.SERVER_HOST }}        
+        username: ${{ secrets.SERVER_USERNAME }} 
+        key: ${{ secrets.SERVER_SSH_KEY }}       
         source: "."
-        target: "/var/www/company-attendance-system" # ဆာဗာပေါ်က project ထားမယ့်လမ်းကြောင်း
+        target: "/var/www/company-attendance-system" 
 
-    # ဆာဗာပေါ်မှာ commands များ လှမ်း Run ပြီး စနစ်ကို update ဖြစ်စေခြင်း
+    
     - name: Execute Remote SSH Commands
       uses: appleboy/ssh-action@master
       with:
