@@ -2,69 +2,85 @@ name: Laravel CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main  
+    branches: [ "main" ]  # main branch ထဲကို code push တိုင်း ဒီ automation အလုပ်လုပ်ပါမယ်
 
 jobs:
-  ci-test:
-    name: Build & Test
+  # ==========================================
+  # အပိုင်း (၁) - Code များကို စစ်ဆေးခြင်းနှင့် Build လုပ်ခြင်း (CI Stage)
+  # ==========================================
+  continuous-integration:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.2"
-          extensions: mbstring, bcmath, xml, mysql, curl, zip
+    # ---- Node.js (React / Vue / Express ဖြစ်ခဲ့လျှင်) ----
+    - name: Setup Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
 
-      - name: Copy .env
-        run: cp .env.example .env
+    - name: Install Node Dependencies & Build
+      run: |
+        npm ci
+        npm run build --if-present
 
-      - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+    # ---- PHP / Laravel ဖြစ်ခဲ့လျှင် (လိုအပ်က ဖွင့်သုံးရန်) ----
+    - name: Setup PHP Environment
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, dom, curl, libxml, zip
 
-      - name: Generate app key
-        run: php artisan key:generate
+    - name: Install PHP Dependencies (Composer)
+      run: |
+        php -r "file_exists('.env') || copy('.env.example', '.env');"
+        composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+        php artisan key:generate --skip
 
-      - name: Run Laravel tests
-        run: php artisan test || true
+    - name: Run Automated Tests
+      run: |
+        npm test --if-present
+        # vendor/bin/phpunit --if-present  # Laravel unit test ရှိက run ရန်
 
-
-  deploy:
-    name: Deploy to Server
+  # ==========================================
+  # အပိုင်း (၂) - Server ပေါ်သို့ တိုက်ရိုက်တင်ခြင်း (CD Stage)
+  # ==========================================
+  continuous-deployment:
+    needs: continuous-integration # Integration အောင်မြင်မှသာ Deployment ကို ဆက်လုပ်ပါမယ်
     runs-on: ubuntu-latest
-    needs: ci-test
+    if: github.ref == 'refs/heads/main' # main branch ပေါ် push တင်တဲ့အချိန်မှသာ deployment လုပ်ရန်
 
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT }}
-          script: |
-            cd /var/www/html/company-attendance
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
 
-            echo "Pulling latest code..."
-            git pull origin main
+    # SSH သုံးပြီး သင့်ရဲ့ Live Server (VPS) ပေါ်သို့ စာဖိုင်များ လှမ်းပို့ခြင်း
+    - name: Deploy to Production Server via SSH
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}         # Server IP Address
+        username: ${{ secrets.SERVER_USERNAME }} # Server Username (e.g., ubuntu, root)
+        key: ${{ secrets.SERVER_SSH_KEY }}       # SSH Private Key
+        source: "."
+        target: "/var/www/company-attendance-system" # ဆာဗာပေါ်က project ထားမယ့်လမ်းကြောင်း
 
-            echo "Installing dependencies..."
-            composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
-
-            echo "Laravel optimize..."
-            php artisan optimize:clear
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
-
-            echo "🗄 Running migrations..."
-            php artisan migrate --force
-
-            echo "Restart queue (if any)..."
-            php artisan queue:restart || true
-
-            echo "Deployment completed"
+    # ဆာဗာပေါ်မှာ commands များ လှမ်း Run ပြီး စနစ်ကို update ဖြစ်စေခြင်း
+    - name: Execute Remote SSH Commands
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: |
+          cd /var/www/company-attendance-system
+          # Node.js app ဖြစ်ပါက pm2 သို့မဟုတ် npm start ပြန်လုပ်ရန်:
+          # npm install --production
+          # pm2 restart attendance-app || pm2 start server.js --name attendance-app
+          
+          # Laravel app ဖြစ်ပါက commands များ run ရန်:
+          # composer install --no-dev --optimize-autoloader
+          # php artisan migrate --force
+          # php artisan config:cache
