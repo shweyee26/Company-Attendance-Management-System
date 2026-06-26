@@ -29,7 +29,6 @@ jobs:
             echo "composer.json not found"
             exit 1
           fi
-
           pwd
           ls -la
 
