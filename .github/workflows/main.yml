@@ -2,7 +2,7 @@ name: Laravel CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]  # main branch ထဲကို code push တိုင်း ဒီ automation အလုပ်လုပ်ပါမယ်
+    branches: main  # main branch ထဲကို code push တိုင်း ဒီ automation အလုပ်လုပ်ပါမယ်
 
 jobs:
   # ==========================================
@@ -19,8 +19,8 @@ jobs:
     - name: Setup Node.js Environment
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
-        cache: 'npm'
+        node-version: '24'
+        
 
     - name: Install Node Dependencies & Build
       run: |
