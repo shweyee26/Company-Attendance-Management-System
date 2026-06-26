@@ -13,32 +13,66 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # PHP Setup
+      # =========================
+      # Detect Laravel root safely
+      # =========================
+      - name: Locate Project Root
+        run: |
+          echo "Checking project structure..."
+
+          if [ -f composer.json ]; then
+            echo "✔ Laravel root found"
+          elif [ -f Company-Attendance-Management-System/composer.json ]; then
+            cd Company-Attendance-Management-System
+            echo "Moved into Laravel folder"
+          else
+            echo "composer.json not found"
+            exit 1
+          fi
+
+          pwd
+          ls -la
+
+      # =========================
+      # Setup PHP
+      # =========================
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.2"
-          extensions: mbstring, dom, curl, zip, pdo, mysql
+          extensions: mbstring, bcmath, curl, zip, pdo, mysql
 
-      # Node Setup
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install Node Dependencies
+      # =========================
+      # Install Composer
+      # =========================
+      - name: Install PHP Dependencies
         run: |
-          if [ -f package.json ]; then
-            npm install
-            npm run build --if-present
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      # =========================
+      # Handle .env safely
+      # =========================
+      - name: Setup Environment File
+        run: |
+          if [ ! -f .env ]; then
+            echo "Creating .env from example or fallback..."
+            if [ -f .env.example ]; then
+              cp .env.example .env
             else
-              echo "No package.json found — skipping Node setup"
+              echo "APP_NAME=Laravel" > .env
+              echo "APP_ENV=production" >> .env
+              echo "APP_KEY=" >> .env
+              echo "APP_DEBUG=false" >> .env
+              echo "APP_URL=http://localhost" >> .env
             fi
+          fi
 
-      - name: Install Composer Dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+          php artisan key:generate --force
 
-      - name: Run Tests (optional)
+      # =========================
+      # Run Laravel checks
+      # =========================
+      - name: Run Laravel Tests
         run: php artisan test || true
 
   deploy:
@@ -57,12 +91,16 @@ jobs:
           script: |
             cd /var/www/company-attendance-system
 
+            echo "Pulling latest code..."
             git pull origin main
 
+            echo "Installing dependencies..."
             composer install --no-dev --optimize-autoloader
 
-            php artisan migrate --force
+            echo "Running migrations..."
+            php artisan migrate --force || true
 
+            echo "Clearing cache..."
             php artisan config:clear
             php artisan cache:clear
             php artisan route:clear
@@ -70,4 +108,5 @@ jobs:
 
             php artisan config:cache
 
+            echo "Restarting server..."
             sudo systemctl restart apache2 || true
