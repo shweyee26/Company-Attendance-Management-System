@@ -28,8 +28,12 @@ jobs:
 
       - name: Install Node Dependencies
         run: |
-          npm install
-          npm run build --if-present
+          if [ -f package.json ]; then
+            npm install
+            npm run build --if-present
+            else
+              echo "No package.json found — skipping Node setup"
+            fi
 
       - name: Install Composer Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
