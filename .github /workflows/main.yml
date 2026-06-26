@@ -60,7 +60,7 @@ jobs:
             php artisan route:cache
             php artisan view:cache
 
-            echo "🗄 Running migrations..."
+            echo "Running migrations..."
             php artisan migrate --force
 
             echo "Restart queue (if any)..."
