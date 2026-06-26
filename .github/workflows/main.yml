@@ -10,6 +10,9 @@ jobs:
   # ==========================================
   continuous-integration:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Company-Attendance-Management-system
 
     steps:
     - name: Checkout Source Code
